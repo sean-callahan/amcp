@@ -4,7 +4,6 @@ package amcp
 
 import (
 	"errors"
-	"log"
 	"net"
 	"net/textproto"
 	"strconv"
@@ -87,10 +86,7 @@ func (c *Client) send(cmd string, args ...interface{}) (id uint, err error) {
 	}
 	c.conn.SetWriteDeadline(deadline)
 
-	payload := formatCmd(cmd, args...)
-	log.Println(payload)
-
-	_, err = c.text.W.WriteString(payload)
+	_, err = c.text.W.WriteString(formatCmd(cmd, args...))
 	if err != nil {
 		return 0, err
 	}
