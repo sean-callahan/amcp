@@ -1,6 +1,8 @@
 amcp
 ====
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/sean-callahan/amcp.svg)](https://pkg.go.dev/github.com/sean-callahan/amcp)
+
 amcp is a [Go](https://golang.org/) client implementation of the Advanced Media Control Protocol (AMCP) mainly used with [CasparCG Server](https://github.com/CasparCG/server).
 
 Installation
