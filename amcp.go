@@ -3,6 +3,8 @@
 package amcp
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"net"
 	"net/textproto"
@@ -154,11 +156,13 @@ func (c *Client) receive() (code int, data interface{}, err error) {
 		deadline = time.Now().Add(c.Timeout)
 	}
 	c.conn.SetReadDeadline(deadline)
+	r := bufio.NewReader(c.conn)
 
-	line, err := c.text.ReadLine()
+	b, err := r.ReadSlice('\n')
 	if err != nil {
 		return 0, "", err
 	}
+	line := string(b[:len(b)-2])
 	code, data, err = parseCodeLine(line)
 	if err != nil {
 		return 0, "", err
@@ -167,19 +171,31 @@ func (c *Client) receive() (code int, data interface{}, err error) {
 	// read all lines if multi line response
 	if code == ReturnOkMulti || code == ReturnOkData {
 		v := []string{data.(string)}
+
 		for {
-			line, err = c.text.ReadLine()
+			b, err := r.ReadSlice('\n')
 			if err != nil {
 				return 0, "", err
 			}
-			// terminated with empty line (\r\n)
-			if len(line) == 0 {
-				break
+
+			endsWithCRNL := len(b) > 0 && bytes.Compare(b[len(b)-2:], crnl) == 0
+			if endsWithCRNL {
+				line = string(b[:len(b)-2])
+			} else if b[len(b)-1] == '\n' {
+				line = string(b[:len(b)-1])
 			}
 			v = append(v, line)
-			if code == ReturnOkData {
+
+			// Single line data ends with CRNL on the end
+			if code == ReturnOkData && endsWithCRNL {
 				break
 			}
+
+			// Multi line data ends has an extra line with only CRNL to signal end
+			if code == ReturnOkMulti && len(b) == 2 && endsWithCRNL {
+				break
+			}
+
 		}
 		data = v
 	}
